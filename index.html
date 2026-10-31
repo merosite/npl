@@ -1,1 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LK HLS PLAYER</title>
+<meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; img-src * data: blob: 'unsafe-inline'; frame-src *; media-src * blob:;">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
+:root {
+--primary-color: #4f46e5;
+--background-color: #1e1e2f;
+--surface-color: #2a2a3d;
+--text-color: #e0e0ff;
+--accent-color: #818cf8;
+--input-bg: #3b3b58;
+--input-border: #55557a;
+--input-focus-border: #4f46e5;
+--error-color: #ef4444;
+--title-color: #ffffff;
+}
+
+* {
+box-sizing: border-box;
+-webkit-user-select: none;
+-moz-user-select: none;
+-ms-user-select: none;
+user-select: none;
+}
+
+body {
+margin: 0;
+background: var(--background-color);
+font-family: 'Poppins', sans-serif;
+color: var(--text-color);
+display: flex;
+flex-direction: column;
+min-height: 100vh;
+align-items: center;
+justify-content: flex-start;
+padding-top: 1rem;
+padding-bottom: 10px;
+}
+
+h1 {
+font-weight: 600;
+margin-bottom: 0.5rem;
+margin-top: 0.5rem;
+color: var(--title-color);
+text-align: center;
+text-shadow: 2px 2px 4px rgba(0, 255, 127, 0.3);
+}
+
+.player-container {
+background: var(--surface-color);
+padding: 1.5rem;
+border-radius: 10px;
+width: 100%;
+max-width: 800px;
+margin-top: 0.5rem;
+}
+
+.video-section {
+margin-bottom: 0;
+position: relative;
+}
+
+.url-section {
+border-top: 1px solid var(--input-border);
+padding-top: 1rem;
+}
+
+video {
+width: 100%;
+border-radius: 10px;
+background: black;
+outline: none;
+}
+
+/* Hide video controls */
+video::-webkit-media-controls-timeline,
+video::-webkit-media-controls-current-time-display,
+video::-webkit-media-controls-time-remaining-display {
+display: none !important;
+}
+
+video::-webkit-media-controls-panel {
+display: flex !important;
+}
+
+video::-webkit-media-controls-play-button,
+video::-webkit-media-controls-mute-button,
+video::-webkit-media-controls-volume-slider {
+display: flex !important;
+}
+
+/* For Firefox */
+video::-moz-range-track {
+display: none !important;
+}
+
+/* For IE/Edge */
+video::-ms-track {
+display: none !important;
+}
+
+.input-group {
+display: flex;
+gap: 0.75rem;
+transition: opacity 0.3s ease;
+}
+
+.input-group.hidden {
+display: none;
+}
+
+.stream-title {
+color: var(--text-color);
+text-align: center;
+margin: 0;
+font-size: 1.1rem;
+opacity: 0;
+transition: opacity 0.3s ease;
+display: none;
+cursor: pointer;
+padding: 0.5rem;
+}
+
+.stream-title:hover {
+background: var(--input-bg);
+border-radius: 8px;
+}
+
+.stream-title .url-text {
+color: var(--accent-color);
+font-size: 0.9rem;
+margin-top: 0.5rem;
+display: block;
+}
+
+.stream-title.visible {
+opacity: 1;
+display: block;
+}
+
+input[type="text"] {
+-webkit-user-select: text;
+-moz-user-select: text;
+-ms-user-select: text;
+user-select: text;
+flex: 1;
+padding: 0.75rem 1rem;
+border-radius: 8px;
+border: 1.5px solid var(--input-border);
+background: var(--input-bg);
+color: var(--text-color);
+font-size: 1rem;
+transition: border-color 0.3s ease;
+text-align: left;
+text-align-last: left;
+direction: ltr;
+text-indent: 0;
+caret-position: start;
+}
+
+input[type="text"]::placeholder {
+text-align: left;
+text-align-last: left;
+direction: ltr;
+text-indent: 0;
+}
+
+input[type="text"]:focus {
+border-color: var(--input-focus-border);
+outline: none;
+}
+
+button {
+background: var(--primary-color);
+border: none;
+border-radius: 8px;
+color: white;
+padding: 0 1.5rem;
+cursor: pointer;
+font-weight: 600;
+transition: background-color 0.3s ease;
+font-size: 1rem;
+}
+
+button:hover,
+button:focus {
+background: #3730a3;
+outline: none;
+}
+
+.error-message {
+color: var(--error-color);
+font-weight: 600;
+margin-top: 0.25rem;
+font-size: 0.9rem;
+text-align: center;
+}
+
+#reload-button {
+    padding: 0 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#reload-button svg {
+    width: 18px;
+    height: 18px;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+#reload-button.loading svg {
+    animation: spin 1s linear infinite;
+}
+
+@media (max-width: 480px) {
+body {
+padding: 1rem;
+}
+
+.player-container {
+max-width: 100%;
+padding: 0.75rem;
+}
+
+input[type="text"] {
+font-size: 0.9rem;
+padding: 0.6rem 0.8rem;
+}
+
+button {
+padding: 0 1rem;
+font-size: 0.9rem;
+}
+
+#reload-button {
+    padding: 0 0.8rem;
+}
+
+#reload-button svg {
+    width: 16px;
+    height: 16px;
+}
+}
+
+/* Live Indicator */
+.live-indicator {
+position: absolute;
+bottom: 11px;
+left: 50px;
+display: flex;
+align-items: center;
+background: transparent;
+padding: 5px 10px;
+border-radius: 4px;
+z-index: 1000;
+height: 40px;
+}
+
+.live-dot {
+width: 8px;
+height: 8px;
+background-color: #ff0000;
+border-radius: 50%;
+margin-right: 6px;
+animation: pulse 1.5s ease-in-out infinite;
+}
+
+.live-dot.inactive {
+    background-color: #ffffff;
+    animation: none;
+    opacity: 0.7;
+}
+
+.live-text {
+color: white;
+font-size: 12px;
+font-weight: 600;
+text-transform: uppercase;
+text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Ensure controls are always visible */
+video::-webkit-media-controls-panel {
+display: flex !important;
+opacity: 1 !important;
+}
+
+/* Position live indicator relative to controls */
+video:hover + .live-indicator,
+.live-indicator:hover {
+opacity: 1;
+}
+
+@keyframes pulse {
+0% {
+    transform: scale(1);
+    opacity: 1;
+}
+50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+}
+100% {
+    transform: scale(1);
+    opacity: 1;
+}
+}
+
+@media (max-width: 480px) {
+.live-indicator {
+    left: 40px;
+    height: 35px;
+}
+
+.live-dot {
+    width: 6px;
+    height: 6px;
+}
+
+.live-text {
+    font-size: 10px;
+}
+}
+
+.url-container {
+    background: var(--surface-color);
+    padding: 0.5rem;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 800px;
+    margin-top: 0.5rem;
+}
+
+.url-section {
+    padding-top: 0;
+    border-top: none;
+}
+</style>
+</head>
+<body>
+<h1></h1>
+<section class="player-container" role="region" aria-label="HLS Video Player">
+    <div class="video-section">
+        <video id="video" controls playsinline webkit-playsinline autoplay muted></video>
+        <div class="live-indicator">
+            <div class="live-dot"></div>
+            <span class="live-text">LIVE</span>
+        </div>
+    </div>
+</section>
+
+<section class="url-container" role="region" aria-label="URL Input Section">
+    <div class="url-section">
+        <h2 class="stream-title" id="stream-title">Enter HLS Stream URL (M3U8)</h2>
+        <div class="input-group">
+            <input id="url-input" type="text" style="text-align: left !important; text-align-last: left !important;" aria-label="Enter HLS m3u8 URL" placeholder="Enter HLS .m3u8 URL here..." />
+            <button id="load-button" aria-label="Load HLS Video">Load</button>
+            <button id="reload-button" aria-label="Reload Video" title="Reload Video">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/>
+                </svg>
+            </button>
+        </div>
+        <p id="error-message" class="error-message" role="alert" aria-live="polite" style="display:none;"></p>
+    </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script>
+const video = document.getElementById('video');
+const urlInput = document.getElementById('url-input');
+const loadButton = document.getElementById('load-button');
+const errorMessage = document.getElementById('error-message');
+const reloadButton = document.getElementById('reload-button');
+const inputGroup = document.querySelector('.input-group');
+const streamTitle = document.getElementById('stream-title');
+const liveDot = document.querySelector('.live-dot');
+
+let hls;
+
+// Add service worker registration at the start
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').then(registration => {
+            console.log('ServiceWorker registration successful');
+        }).catch(err => {
+            console.log('ServiceWorker registration failed: ', err);
+        });
+    });
+}
+
+// Cache video segments
+const videoCache = new Map();
+
+function setLiveDotInactive() {
+    liveDot.classList.add('inactive');
+}
+
+function setLiveDotActive() {
+    liveDot.classList.remove('inactive');
+}
+
+function showError(message) {
+    errorMessage.textContent = message;
+    errorMessage.style.display = 'block';
+    setLiveDotInactive();
+}
+
+function clearError() {
+    errorMessage.textContent = '';
+    errorMessage.style.display = 'none';
+}
+
+// Checks if the user is on Safari or an HLS native capable browser
+function canPlayHlsNatively() {
+const v = document.createElement('video');
+return v.canPlayType('application/vnd.apple.mpegurl') !== '';
+}
+
+function tryAutoplay() {
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+        playPromise
+            .then(() => {
+                console.log('Autoplay started successfully');
+            })
+            .catch(error => {
+                console.log('Autoplay failed:', error);
+                // Retry with muted audio if autoplay fails
+                if (!video.muted) {
+                    video.muted = true;
+                    tryAutoplay();
+                }
+            });
+    }
+}
+
+// Add continuous play monitoring
+function setupContinuousPlay() {
+    // Check every 500ms if video is paused
+    setInterval(() => {
+        if (video.paused && !video.ended) {
+            console.log('Video paused, attempting to resume...');
+            tryAutoplay();
+        }
+    }, 500);
+
+    // Handle pause event
+    video.addEventListener('pause', () => {
+        console.log('Pause detected, attempting to resume...');
+        setTimeout(tryAutoplay, 100);
+    });
+
+    // Handle seeking
+    video.addEventListener('seeking', () => {
+        console.log('Seeking detected, ensuring playback...');
+        if (video.paused) {
+            tryAutoplay();
+        }
+    });
+
+    // Handle network issues
+    video.addEventListener('waiting', () => {
+        console.log('Network buffering, attempting to resume...');
+        setTimeout(tryAutoplay, 1000);
+    });
+}
+
+function reloadCurrentStream() {
+    const currentUrl = urlInput.value.trim() || video.currentSrc;
+    if (currentUrl) {
+        reloadButton.classList.add('loading');
+        console.log('Reloading stream...');
+        
+        // Stop current playback
+        video.pause();
+        video.currentTime = 0;
+        video.src = '';
+        video.load();
+        
+        // Destroy existing HLS instance
+        if (hls) {
+            hls.destroy();
+            hls = null;
+        }
+        
+        // Clear any existing errors
+        clearError();
+        
+        // Wait a moment before restarting
+        setTimeout(() => {
+            // Force CORS headers
+            const finalUrl = currentUrl.includes('?') ? 
+                currentUrl + '&_=' + Date.now() : 
+                currentUrl + '?_=' + Date.now();
+            
+            // Setup player with fresh HLS instance
+            setupPlayer(finalUrl);
+            reloadButton.classList.remove('loading');
+        }, 1000);
+    } else {
+        showError('No stream to reload');
+    }
+}
+
+function setupPlayer(url) {
+    clearError();
+    setLiveDotInactive();
+
+    if (hls) {
+        hls.destroy();
+        hls = null;
+    }
+
+    // Clean and validate URL
+    url = url.trim();
+    if (!url) {
+        showError('Please enter a valid HLS .m3u8 URL');
+        return;
+    }
+
+    // Force muted state and autoplay for initial load
+    video.muted = true;
+    video.autoplay = true;
+
+    if (canPlayHlsNatively()) {
+        video.src = url;
+        video.load();
+        video.play().catch(function(error) {
+            console.log('Native playback failed:', error);
+            tryAutoplay();
+        });
+        setupContinuousPlay();
+    } else if (Hls.isSupported()) {
+        try {
+            hls = new Hls({
+                debug: false,
+                enableWorker: true,
+                lowLatencyMode: true,
+                autoStartLoad: true,
+                startLevel: -1,
+                abrEwmaFastLive: 3,
+                abrEwmaSlowLive: 9,
+                abrEwmaFastVoD: 3,
+                abrEwmaSlowVoD: 9,
+                maxBufferSize: 30 * 1000 * 1000,
+                maxBufferLength: 40,
+                maxMaxBufferLength: 600,
+                manifestLoadingTimeOut: 15000,
+                manifestLoadingMaxRetry: 6,
+                manifestLoadingRetryDelay: 1000,
+                levelLoadingTimeOut: 15000,
+                levelLoadingMaxRetry: 6,
+                levelLoadingRetryDelay: 1000,
+                fragLoadingTimeOut: 20000,
+                fragLoadingMaxRetry: 6,
+                fragLoadingRetryDelay: 1000,
+                backBufferLength: 30,
+                startFragPrefetch: true,
+                testBandwidth: true,
+                progressive: true,
+                lowLatencyMode: false
+            });
+
+            hls.loadSource(url);
+            hls.attachMedia(video);
+            
+            hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                console.log('Manifest parsed, qualities available:', hls.levels.length);
+                tryAutoplay();
+                setupContinuousPlay();
+                clearError();
+            });
+
+            let retryCount = 0;
+            const MAX_RETRIES = 5;
+
+            hls.on(Hls.Events.ERROR, function(event, data) {
+                console.log('HLS Error:', data.type, data.details);
+                if (data.fatal) {
+                    switch(data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                            if (retryCount < MAX_RETRIES) {
+                                retryCount++;
+                                showError(`Network error, attempting recovery (${retryCount}/${MAX_RETRIES})...`);
+                                setTimeout(() => {
+                                    hls.startLoad();
+                                }, 1000 * retryCount);
+                            } else {
+                                showError('Maximum retry attempts reached. Please check your connection.');
+                            }
+                            break;
+                        case Hls.ErrorTypes.MEDIA_ERROR:
+                            console.log('Media error, attempting recovery...');
+                            showError("Media error. Recovering...");
+                            hls.recoverMediaError();
+                            break;
+                        default:
+                            showError("An error occurred while loading the video.");
+                            console.error('Fatal error:', data);
+                            hls.destroy();
+                            break;
+                    }
+                }
+            });
+
+            // Add quality level monitoring
+            hls.on(Hls.Events.LEVEL_SWITCHED, function(event, data) {
+                console.log('Quality level switched to:', data.level);
+            });
+
+            // Add buffer monitoring
+            hls.on(Hls.Events.BUFFER_APPENDED, function(event, data) {
+                console.log('Buffer appended:', data);
+            });
+
+        } catch (error) {
+            console.error('Error setting up HLS:', error);
+            showError("Failed to initialize player: " + error.message);
+        }
+    } else {
+        showError('Your browser does not support HLS playback.');
+    }
+}
+
+// Automatically reload video after it ends (non live)
+video.addEventListener('ended', () => {
+// Reload automatically
+const currentSrc = video.currentSrc || video.src;
+if(currentSrc){
+setTimeout(() => {
+setupPlayer(currentSrc);
+}, 2000);
+}
+});
+
+function hideUrlInput() {
+    inputGroup.classList.add('hidden');
+    streamTitle.classList.add('visible');
+}
+
+function formatUrl(url) {
+    try {
+        if (url.includes('proxy.php?url=')) {
+            const proxyPart = url.split('proxy.php?url=')[0];
+            const encodedUrl = url.split('proxy.php?url=')[1];
+            const decodedUrl = decodeURIComponent(encodedUrl);
+            return proxyPart + 'proxy.php?url=' + decodedUrl;
+        }
+        return url;
+    } catch (e) {
+        return url;
+    }
+}
+
+function showUrlInput() {
+    inputGroup.classList.remove('hidden');
+    streamTitle.classList.remove('visible');
+    
+    // Focus on input and ensure cursor is at start
+    urlInput.focus();
+    requestAnimationFrame(() => {
+        urlInput.setSelectionRange(0, 0);
+        urlInput.scrollLeft = 0;
+    });
+}
+
+// Add input handler to keep cursor at start and scroll to start
+urlInput.addEventListener('input', function() {
+    requestAnimationFrame(() => {
+        this.scrollLeft = 0;
+    });
+});
+
+// Add click handler for input
+urlInput.addEventListener('click', function(event) {
+    event.stopPropagation();
+});
+
+// Add focus handler
+urlInput.addEventListener('focus', function() {
+    requestAnimationFrame(() => {
+        this.setSelectionRange(0, 0);
+        this.scrollLeft = 0;
+    });
+});
+
+// Add click handler for stream title
+streamTitle.addEventListener('click', (event) => {
+    event.stopPropagation(); // Prevent document click from immediately hiding
+    showUrlInput();
+});
+
+// Add click handler for input group to prevent hiding when clicking inside
+inputGroup.addEventListener('click', (event) => {
+    event.stopPropagation();
+});
+
+// Add document click handler to hide URL input when clicking outside
+document.addEventListener('click', () => {
+    if (!inputGroup.classList.contains('hidden')) {
+        hideUrlInput();
+    }
+});
+
+// Update loadButton click handler
+loadButton.addEventListener('click', (event) => {
+    event.stopPropagation();
+    let url = urlInput.value.trim();
+    if(!url) {
+        showError('Please enter a valid HLS .m3u8 URL');
+        return;
+    }
+    // Re-encode the URL before loading
+    if (url.includes('proxy.php?url=')) {
+        const proxyPart = url.split('proxy.php?url=')[0];
+        const actualUrl = url.split('proxy.php?url=')[1];
+        url = proxyPart + 'proxy.php?url=' + encodeURIComponent(actualUrl);
+    }
+    clearError();
+    setupPlayer(url);
+    hideUrlInput();
+});
+
+// Allow pressing Enter key in input to load video
+urlInput.addEventListener('keydown', event => {
+if(event.key === 'Enter') {
+loadButton.click();
+}
+});
+
+// On page load, set default URL and setup player
+window.addEventListener('load', () => {
+    const streamUrl = 'https://lb-ottnp.nettvstreamz.com/npl/live_match6/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTAvMzEvMjAyNiAyOjA5OjAyIFBNJmhhc2hfdmFsdWU9RGxXemZuYnFKYkpGVG53SC9vNkgyZz09JnZhbGlkbWludXRlcz02MCZpZD1leUowZVhBaU9pSktWMVFpTENKaGJHY2lPaUpTVXpJMU5pSjkuZXlKbGVIQWlPakUzT1RNMk1qZzFOREVzSW5OMVluTmpjbWxpWlhKZmFXUWlPaUl4TWpBMU5UWTBNeUlzSW5OMFlpSTZJams0TkRJME16azNNek10TVRBM0luMC5XdjVUdV9aM3hZcnlGTjVBRWxmLWFSaXYyUENrQVdxeG9RWkNkWm1mRV9B';
+    urlInput.value = streamUrl;
+    video.muted = true;
+    video.autoplay = true;
+    setupPlayer(streamUrl);
+    hideUrlInput();
+});
+
+// Add reload button click handler with stopPropagation
+reloadButton.addEventListener('click', (event) => {
+    event.stopPropagation();
+    reloadCurrentStream();
+});
+
+// Add keyboard shortcut (R key) for reload
+document.addEventListener('keydown', event => {
+    if (event.key.toLowerCase() === 'r' && !event.ctrlKey && !event.metaKey) {
+        reloadCurrentStream();
+    }
+});
+
+// Add double click handler for fullscreen
+video.addEventListener('dblclick', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    if (document.fullscreenElement) {
+        document.exitFullscreen();
+    } else {
+        video.requestFullscreen();
+    }
+});
+
+// Add event listeners for video states
+video.addEventListener('playing', () => {
+    setLiveDotActive();
+});
+
+video.addEventListener('waiting', () => {
+    setLiveDotInactive();
+});
+
+video.addEventListener('pause', () => {
+    setLiveDotInactive();
+});
+
+video.addEventListener('error', () => {
+    setLiveDotInactive();
+});
+
+video.addEventListener('click', (event) => {
+    // Check if the click is on the controls
+    const rect = video.getBoundingClientRect();
+    const y = event.clientY - rect.top;
+    
+    // If click is not in the bottom control area (approximately last 40px)
+    if (y < (rect.height - 40)) {
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+    }
+});
+
+// Add URL input event handlers
+urlInput.addEventListener('mouseup', (event) => {
+    if (event.detail === 2) { // Double click
+        event.preventDefault();
+        setTimeout(() => {
+            event.target.select();
+        }, 0);
+    }
+});
+
+urlInput.addEventListener('mousedown', (event) => {
+    if (event.detail === 2) { // Double click
+        event.preventDefault();
+    }
+});
+
+urlInput.addEventListener('click', (event) => {
+    event.stopPropagation();
+});
+
+urlInput.addEventListener('contextmenu', (event) => {
+    event.stopPropagation();
+    // Ensure text selection remains after right-click
+    if (window.getSelection().toString().length === 0) {
+        event.target.select();
+    }
+});
+
+// Prevent selection from being lost when clicking outside
+document.addEventListener('mousedown', (event) => {
+    if (event.target !== urlInput && window.getSelection().toString().length > 0) {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            if (range.commonAncestorContainer === urlInput || range.commonAncestorContainer.parentNode === urlInput) {
+                event.preventDefault();
+            }
+        }
+    }
+});
+</script>
+</body>
+</html>
